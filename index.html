@@ -2,53 +2,49 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portfolio | Diệp Ngọc Bảo Anh </title>
+    <title>Quản lý Đề tài Kinh tế tuần hoàn Ngành dừa</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&family=Playfair+Display:italic,wght@700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <div class="sidebar">
+        <h2>🥥 Đề tài Dừa</h2>
+        <ul>
+            <li class="active">Bảng điều khiển</li>
+            <li>Thành viên (10)</li>
+            <li>Dữ liệu 400 hộ</li>
+            <li>Tín chỉ Carbon</li>
+            <li>Báo cáo NAFOSTED</li>
+        </ul>
+    </div>
 
-    <section class="hero">
-        <div class="hero-content">
-            <h1 class="fade-in">Nghệ thuật là lời nói của tâm hồn.</h1>
-            <p class="fade-in">Digital Art Portfolio by Bao Anh</p>
-        </div>
-        <div class="scroll-indicator">Cuộn để bắt đầu câu chuyện</div>
-    </section>
+    <div class="main-content">
+        <header>
+            <h1>Hệ thống Quản lý Đề tài - PGS.TS Diệp Thanh Tùng</h1>
+        </header>
 
-    <section class="story-container">
-        
-        <div class="artwork-row">
-            <div class="art-image slide-left">
-                <img src="1.jpg" alt="Artwork 1">
-            </div>
-            <div class="art-desc slide-right">
-                <span class="year">2023</span>
-                <h2>Tên Tác Phẩm Số 1</h2>
-                <p>Đây là nơi bạn kể về nguồn cảm hứng. Ví dụ: "Bức tranh này ra đời trong một đêm mưa, khi tôi đang suy nghĩ về..."</p>
-            </div>
-        </div>
-
-        <div class="artwork-row reverse">
-            <div class="art-image slide-right">
-                <img src="2.jpg" alt="Artwork 2">
-            </div>
-            <div class="art-desc slide-left">
-                <span class="year">2024</span>
-                <h2>Sự Giao Thoa</h2>
-                <p>Mô tả kỹ thuật hoặc quá trình bạn vượt qua khó khăn khi vẽ bức tranh này.</p>
-            </div>
+        <div class="stats-container">
+            <div class="card"><h3>Tiến độ tổng thể</h3><p>25%</p></div>
+            <div class="card"><h3>Hộ đã khảo sát</h3><p>120/400</p></div>
+            <div class="card"><h3>Ngày còn lại</h3><p>945 ngày</p></div>
         </div>
 
-    </section>
-
-    <footer class="footer">
-        <h2>Cảm ơn bạn đã lắng nghe câu chuyện của tôi.</h2>
-        <p>Liên hệ: email@cua-ban.com | Instagram: @account_cua_ban</p>
-    </footer>
-
+        <div class="content-grid">
+            <div class="task-section">
+                <h2>Công việc hiện tại</h2>
+                <ul id="task-list">
+                    <li>Thu thập tài liệu kinh tế tuần hoàn <span class="tag done">Xong</span></li>
+                    <li>Thiết kế phiếu khảo sát <span class="tag process">Đang làm</span></li>
+                    <li>Phỏng vấn chuyên gia <span class="tag todo">Chờ</span></li>
+                </ul>
+            </div>
+            
+            <div class="chart-section">
+                <h2>Biểu đồ khảo sát theo tỉnh</h2>
+                <canvas id="myChart"></canvas>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
-
