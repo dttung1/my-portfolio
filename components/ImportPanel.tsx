@@ -1,14 +1,38 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Profile } from "@/lib/profile-schema";
 import { fetchGitHubProfile, GitHubImport } from "@/lib/import-github";
 import { fetchOrcidProfile, OrcidImport } from "@/lib/import-orcid";
+import { parseBibtex, BibtexImport } from "@/lib/import-bibtex";
+import { parseLinkedInPdf, LinkedInImport } from "@/lib/import-linkedin-pdf";
 
-type Source = "github" | "orcid";
+type Source = "github" | "orcid" | "bibtex" | "linkedin";
 type Fetched =
   | { source: "github"; data: GitHubImport }
-  | { source: "orcid"; data: OrcidImport };
+  | { source: "orcid"; data: OrcidImport }
+  | { source: "bibtex"; data: BibtexImport }
+  | { source: "linkedin"; data: LinkedInImport };
+
+const SOURCE_META: Record<Source, { label: string; hint: string }> = {
+  github: {
+    label: "GitHub",
+    hint: "Hồ sơ public, top 8 repo (loại fork & archived), 8 ngôn ngữ phổ biến nhất.",
+  },
+  orcid: {
+    label: "ORCID",
+    hint: "Chỉ lấy các trường đặt chế độ public trên ORCID.",
+  },
+  bibtex: {
+    label: "BibTeX",
+    hint: "Dán BibTeX export từ Google Scholar, Mendeley, Zotero… → công bố.",
+  },
+  linkedin: {
+    label: "LinkedIn PDF",
+    hint:
+      "Trên LinkedIn: More → Save to PDF, sau đó upload tại đây. Trích xuất tốt nhất cho CV tiếng Anh; tiếng Việt cần xác minh.",
+  },
+};
 
 export function ImportPanel({
   current,
@@ -21,23 +45,49 @@ export function ImportPanel({
 }) {
   const [source, setSource] = useState<Source>("github");
   const [identifier, setIdentifier] = useState("");
+  const [bibtexText, setBibtexText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fetched, setFetched] = useState<Fetched | null>(null);
   const [overwriteBasic, setOverwriteBasic] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const onFetch = async () => {
+  const reset = () => {
     setError(null);
     setFetched(null);
+  };
+
+  const onFetch = async () => {
+    reset();
     setLoading(true);
     try {
       if (source === "github") {
         const data = await fetchGitHubProfile(identifier);
         setFetched({ source: "github", data });
-      } else {
+      } else if (source === "orcid") {
         const data = await fetchOrcidProfile(identifier);
         setFetched({ source: "orcid", data });
+      } else if (source === "bibtex") {
+        if (!bibtexText.trim()) throw new Error("Hãy dán nội dung BibTeX trước.");
+        const data = parseBibtex(bibtexText);
+        if (data.publications.length === 0) {
+          throw new Error("Không phát hiện entry @article/@inproceedings nào trong văn bản.");
+        }
+        setFetched({ source: "bibtex", data });
       }
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onPdfFile = async (file: File) => {
+    reset();
+    setLoading(true);
+    try {
+      const data = await parseLinkedInPdf(file);
+      setFetched({ source: "linkedin", data });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -50,9 +100,6 @@ export function ImportPanel({
     onApply(mergeProfile(current, fetched, { overwriteBasic }));
     onClose();
   };
-
-  const placeholder =
-    source === "github" ? "vd: torvalds (username GitHub)" : "vd: 0000-0002-1825-0097";
 
   return (
     <div
@@ -77,8 +124,8 @@ export function ImportPanel({
           </button>
         </div>
 
-        <div className="mb-3 flex gap-2">
-          {(["github", "orcid"] as Source[]).map((s) => (
+        <div className="mb-3 flex flex-wrap gap-2">
+          {(Object.keys(SOURCE_META) as Source[]).map((s) => (
             <button
               key={s}
               type="button"
@@ -89,45 +136,86 @@ export function ImportPanel({
               }`}
               onClick={() => {
                 setSource(s);
-                setFetched(null);
-                setError(null);
+                reset();
               }}
             >
-              {s === "github" ? "GitHub" : "ORCID"}
+              {SOURCE_META[s].label}
             </button>
           ))}
         </div>
 
-        <div className="mb-3 flex gap-2">
-          <input
-            className="input"
-            placeholder={placeholder}
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && identifier.trim()) onFetch();
-            }}
-          />
-          <button
-            type="button"
-            className="btn-primary"
-            disabled={loading || !identifier.trim()}
-            onClick={onFetch}
-          >
-            {loading ? "Đang tải…" : "Lấy dữ liệu"}
-          </button>
-        </div>
+        <p className="mb-3 text-xs text-slate-500">{SOURCE_META[source].hint}</p>
 
-        {source === "orcid" && (
-          <p className="mb-2 text-xs text-slate-500">
-            Dữ liệu chỉ lấy từ các trường đặt chế độ <em>public</em> trên ORCID.
-          </p>
+        {(source === "github" || source === "orcid") && (
+          <div className="mb-3 flex gap-2">
+            <input
+              className="input"
+              placeholder={
+                source === "github"
+                  ? "vd: torvalds (username GitHub)"
+                  : "vd: 0000-0002-1825-0097"
+              }
+              value={identifier}
+              onChange={(e) => setIdentifier(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && identifier.trim()) onFetch();
+              }}
+            />
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={loading || !identifier.trim()}
+              onClick={onFetch}
+            >
+              {loading ? "Đang tải…" : "Lấy dữ liệu"}
+            </button>
+          </div>
         )}
-        {source === "github" && (
-          <p className="mb-2 text-xs text-slate-500">
-            Lấy hồ sơ public, top 8 repo (loại trừ fork & archived), 8 ngôn ngữ
-            phổ biến nhất làm kỹ năng.
-          </p>
+
+        {source === "bibtex" && (
+          <div className="mb-3 space-y-2">
+            <textarea
+              rows={8}
+              className="input font-mono text-xs"
+              placeholder={"@article{key, title={...}, author={...}, journal={...}, year={2024} }"}
+              value={bibtexText}
+              onChange={(e) => setBibtexText(e.target.value)}
+            />
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={loading || !bibtexText.trim()}
+                onClick={onFetch}
+              >
+                {loading ? "Đang phân tích…" : "Phân tích BibTeX"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {source === "linkedin" && (
+          <div className="mb-3 space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="application/pdf"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onPdfFile(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              className="btn-primary w-full"
+              disabled={loading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {loading ? "Đang phân tích PDF…" : "Chọn file LinkedIn PDF"}
+            </button>
+          </div>
         )}
 
         {error && (
@@ -142,15 +230,20 @@ export function ImportPanel({
               <Preview fetched={fetched} />
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={overwriteBasic}
-                onChange={(e) => setOverwriteBasic(e.target.checked)}
-              />
-              Ghi đè các trường cơ bản (tên, giới thiệu, email…) — mặc định chỉ
-              điền khi đang trống.
-            </label>
+            {hasBasicTargets(fetched) && (
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-1"
+                  checked={overwriteBasic}
+                  onChange={(e) => setOverwriteBasic(e.target.checked)}
+                />
+                <span>
+                  Ghi đè các trường cơ bản (tên, giới thiệu, email…) — mặc định
+                  chỉ điền khi đang trống.
+                </span>
+              </label>
+            )}
 
             <div className="flex justify-end gap-2">
               <button type="button" className="btn-secondary" onClick={onClose}>
@@ -167,42 +260,77 @@ export function ImportPanel({
   );
 }
 
+function hasBasicTargets(f: Fetched) {
+  return f.source === "github" || f.source === "orcid" || f.source === "linkedin";
+}
+
 function Preview({ fetched }: { fetched: Fetched }) {
-  const counts =
-    fetched.source === "github"
-      ? {
-          "Tên": fetched.data.fullName,
-          "Giới thiệu": fetched.data.summary,
-          "Liên kết": fetched.data.links.length,
-          "Dự án": fetched.data.projects.length,
-          "Kỹ năng": fetched.data.skills.length,
-        }
-      : {
-          "Tên": fetched.data.fullName,
-          "Tiểu sử": fetched.data.summary,
-          "Liên kết": fetched.data.links.length,
-          "Học vấn": fetched.data.education.length,
-          "Kinh nghiệm": fetched.data.experience.length,
-          "Công bố": fetched.data.publications.length,
-        };
+  let counts: Record<string, number | string | undefined>;
+  let warnings: string[] = [];
+  switch (fetched.source) {
+    case "github":
+      counts = {
+        Tên: fetched.data.fullName,
+        "Giới thiệu": fetched.data.summary,
+        "Liên kết": fetched.data.links.length,
+        "Dự án": fetched.data.projects.length,
+        "Kỹ năng": fetched.data.skills.length,
+      };
+      break;
+    case "orcid":
+      counts = {
+        Tên: fetched.data.fullName,
+        "Tiểu sử": fetched.data.summary,
+        "Liên kết": fetched.data.links.length,
+        "Học vấn": fetched.data.education.length,
+        "Kinh nghiệm": fetched.data.experience.length,
+        "Công bố": fetched.data.publications.length,
+      };
+      break;
+    case "bibtex":
+      counts = { "Công bố nhận diện được": fetched.data.publications.length };
+      warnings = fetched.data.warnings;
+      break;
+    case "linkedin":
+      counts = {
+        Tên: fetched.data.fullName,
+        Email: fetched.data.email,
+        "Tóm tắt": fetched.data.summary,
+        "Kỹ năng": fetched.data.skills.length,
+        "Ngôn ngữ": fetched.data.languages.length,
+        "Học vấn": fetched.data.education.length,
+        "Kinh nghiệm": fetched.data.experience.length,
+      };
+      warnings = fetched.data.warnings;
+      break;
+  }
 
   return (
-    <ul className="space-y-1">
-      {Object.entries(counts).map(([k, v]) => (
-        <li key={k} className="flex justify-between">
-          <span className="text-slate-500">{k}</span>
-          <span className="font-medium">
-            {typeof v === "number"
-              ? v
-              : v
-                ? v.length > 60
-                  ? v.slice(0, 60) + "…"
-                  : v
-                : "—"}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <div className="space-y-2">
+      <ul className="space-y-1">
+        {Object.entries(counts).map(([k, v]) => (
+          <li key={k} className="flex justify-between gap-2">
+            <span className="text-slate-500">{k}</span>
+            <span className="text-right font-medium">
+              {typeof v === "number"
+                ? v
+                : v
+                  ? v.length > 60
+                    ? v.slice(0, 60) + "…"
+                    : v
+                  : "—"}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {warnings.length > 0 && (
+        <ul className="space-y-1 rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+          {warnings.map((w, i) => (
+            <li key={i}>⚠ {w}</li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -234,12 +362,9 @@ function mergeProfile(
     fillBasic("website", d.website);
     fillBasic("email", d.email);
     next.links = dedupeBy([...next.links, ...d.links], (l) => l.url);
-    next.projects = dedupeBy(
-      [...next.projects, ...d.projects],
-      (p) => p.url || p.name,
-    );
+    next.projects = dedupeBy([...next.projects, ...d.projects], (p) => p.url || p.name);
     next.skills = dedupeStrings([...next.skills, ...d.skills]);
-  } else {
+  } else if (fetched.source === "orcid") {
     const d = fetched.data;
     fillBasic("fullName", d.fullName);
     fillBasic("summary", d.summary);
@@ -252,6 +377,20 @@ function mergeProfile(
       (p) => (p.doi ? `doi:${p.doi}` : `t:${p.title.toLowerCase()}`),
     );
     next.skills = dedupeStrings([...next.skills, ...d.skills]);
+  } else if (fetched.source === "bibtex") {
+    next.publications = dedupeBy(
+      [...next.publications, ...fetched.data.publications],
+      (p) => (p.doi ? `doi:${p.doi}` : `t:${p.title.toLowerCase()}`),
+    );
+  } else if (fetched.source === "linkedin") {
+    const d = fetched.data;
+    fillBasic("fullName", d.fullName);
+    fillBasic("summary", d.summary);
+    fillBasic("email", d.email);
+    next.experience = [...next.experience, ...d.experience];
+    next.education = [...next.education, ...d.education];
+    next.skills = dedupeStrings([...next.skills, ...d.skills]);
+    next.languages = dedupeStrings([...next.languages, ...d.languages]);
   }
   return next;
 }
