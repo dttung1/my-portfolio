@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { ProfileForm } from "@/components/ProfileForm";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
 import { ImportPanel } from "@/components/ImportPanel";
+import { CustomTemplateUploader } from "@/components/CustomTemplateUploader";
 import {
   Profile,
   emptyProfile,
@@ -19,13 +20,20 @@ import {
   saveProfile,
 } from "@/lib/storage";
 import { TemplateId, templates } from "@/lib/templates";
+import {
+  CustomTemplate,
+  deleteCustomTemplate,
+  loadCustomTemplates,
+} from "@/lib/custom-templates-storage";
 
 export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
-  const [templateId, setTemplateId] = useState<TemplateId>("modern");
+  const [templateId, setTemplateId] = useState<string>("modern");
   const [showImport, setShowImport] = useState(false);
+  const [showUploader, setShowUploader] = useState(false);
+  const [customTemplates, setCustomTemplates] = useState<CustomTemplate[]>([]);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const form = useForm<Profile>({
@@ -36,8 +44,11 @@ export default function HomePage() {
 
   useEffect(() => {
     form.reset(loadProfile());
+    setCustomTemplates(loadCustomTemplates());
     setHydrated(true);
   }, [form]);
+
+  const activeCustomTemplate = customTemplates.find((t) => `custom:${t.id}` === templateId);
 
   const watched = form.watch();
 
@@ -84,15 +95,34 @@ export default function HomePage() {
             <select
               className="input w-auto text-sm"
               value={templateId}
-              onChange={(e) => setTemplateId(e.target.value as TemplateId)}
+              onChange={(e) => setTemplateId(e.target.value)}
               aria-label="Chọn template"
             >
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
+              <optgroup label="Có sẵn">
+                {templates.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </optgroup>
+              {customTemplates.length > 0 && (
+                <optgroup label="Mẫu tự học">
+                  {customTemplates.map((t) => (
+                    <option key={t.id} value={`custom:${t.id}`}>
+                      {t.name}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowUploader(true)}
+              title="Upload mẫu DOCX, AI sẽ map field"
+            >
+              + Mẫu (AI)
+            </button>
             <button
               type="button"
               className="btn-secondary"
@@ -129,7 +159,11 @@ export default function HomePage() {
               Xoá hết
             </button>
             {hydrated && (
-              <PdfDownloadButton profile={form.getValues()} templateId={templateId} />
+              <PdfDownloadButton
+                profile={form.getValues()}
+                templateId={templateId}
+                customTemplate={activeCustomTemplate}
+              />
             )}
           </div>
         </div>
@@ -171,7 +205,16 @@ export default function HomePage() {
               <div className="section-title">
                 <span>Template hiện chọn</span>
               </div>
-              <TemplateInfo templateId={templateId} />
+              <TemplateInfo
+                templateId={templateId}
+                customTemplate={activeCustomTemplate}
+                onDeleteCustom={(id) => {
+                  if (!confirm("Xoá template tự học này?")) return;
+                  deleteCustomTemplate(id);
+                  setCustomTemplates(loadCustomTemplates());
+                  setTemplateId("modern");
+                }}
+              />
             </div>
             <div className="card">
               <div className="section-title">Xem trước</div>
@@ -182,8 +225,8 @@ export default function HomePage() {
       </main>
 
       <footer className="p-4 text-center text-xs text-slate-400">
-        MVP bước 3 — Import từ GitHub & ORCID · Bước tiếp: học mẫu DOCX của
-        viên chức bằng LLM, cloud sync tuỳ chọn.
+        MVP bước 5 — Học mẫu DOCX bằng Claude. Bước tiếp: cloud sync tuỳ chọn,
+        render DOCX gốc giữ format thay vì HTML print.
       </footer>
 
       {showImport && (
@@ -193,12 +236,52 @@ export default function HomePage() {
           onClose={() => setShowImport(false)}
         />
       )}
+
+      {showUploader && (
+        <CustomTemplateUploader
+          onClose={() => setShowUploader(false)}
+          onSaved={(t) => {
+            setCustomTemplates(loadCustomTemplates());
+            setTemplateId(`custom:${t.id}`);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-function TemplateInfo({ templateId }: { templateId: TemplateId }) {
-  const t = templates.find((x) => x.id === templateId)!;
+function TemplateInfo({
+  templateId,
+  customTemplate,
+  onDeleteCustom,
+}: {
+  templateId: string;
+  customTemplate?: CustomTemplate;
+  onDeleteCustom: (id: string) => void;
+}) {
+  if (customTemplate) {
+    return (
+      <div className="space-y-2 text-sm">
+        <div className="font-semibold text-brand-700">{customTemplate.name}</div>
+        <div className="text-xs text-slate-500">
+          Mẫu tự học · {customTemplate.mappings.length} field map ·{" "}
+          {customTemplate.unmatched.length} chưa map
+        </div>
+        <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+          Bấm <strong>Mở bản in</strong> để mở cửa sổ in (Ctrl/Cmd+P → Save as PDF).
+          Định dạng có thể không 100% giống file gốc do mammoth bỏ một số style DOCX.
+        </p>
+        <button
+          type="button"
+          className="btn-danger w-full text-xs"
+          onClick={() => onDeleteCustom(customTemplate.id)}
+        >
+          Xoá template này
+        </button>
+      </div>
+    );
+  }
+  const t = templates.find((x) => x.id === (templateId as TemplateId))!;
   return (
     <div className="space-y-1 text-sm">
       <div className="font-semibold text-brand-700">{t.name}</div>

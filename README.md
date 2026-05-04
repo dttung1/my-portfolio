@@ -6,10 +6,13 @@ App tạo, lưu và xuất hồ sơ cá nhân (CV / lý lịch). MVP bước 1: 
 
 ```bash
 npm install
+cp .env.local.example .env.local   # rồi điền ANTHROPIC_API_KEY nếu muốn dùng "Học mẫu mới (AI)"
 npm run dev
 ```
 
 Mở http://localhost:3000.
+
+> Tính năng "Học mẫu mới (AI)" gọi Claude Opus 4.7 server-side, cần `ANTHROPIC_API_KEY` trong `.env.local`. Lấy key tại <https://console.anthropic.com>. Các tính năng khác chạy hoàn toàn offline-first.
 
 ## Tính năng
 
@@ -22,11 +25,12 @@ Mở http://localhost:3000.
   - **BibTeX**: dán export từ Google Scholar / Mendeley / Zotero → công bố (parser tự viết, không deps).
   - **LinkedIn PDF**: upload file PDF "Save to PDF" → tên, email, tóm tắt, kỹ năng, ngôn ngữ, học vấn, kinh nghiệm (best-effort, hoạt động tốt nhất với CV tiếng Anh).
   - Khi gộp: tự dedupe links/projects/publications/skills, mặc định không ghi đè trường cơ bản đang có.
-- **4 template PDF** chọn từ dropdown:
+- **4 template PDF có sẵn** chọn từ dropdown:
   - **Modern CV** — bố cục 1 cột gọn.
   - **Sinh viên / Học sinh** — banner màu, hai cột.
   - **Nhà khoa học** — học thuật, công bố đánh số.
   - **Sơ yếu lý lịch 2C** — mẫu 2C-BNV/2008 dạng bảng.
+- **Học mẫu mới (AI)**: upload DOCX bất kỳ → Claude Opus 4.7 chèn token `{{path.to.field}}` vào đúng ô, người dùng duyệt mapping rồi lưu. Render bằng "Mở bản in" (HTML → in / Save as PDF).
 - Font Roboto Vietnamese tải qua CDN khi xuất PDF.
 - Responsive: tab "Chỉnh sửa / Xem trước" trên mobile, hai cột trên desktop.
 
@@ -36,8 +40,8 @@ Mở http://localhost:3000.
 2. ✅ 4 template (HS/SV, nhà khoa học, viên chức 2C).
 3. ✅ Import GitHub & ORCID public.
 4. ✅ BibTeX (Google Scholar export) & LinkedIn PDF.
-5. Upload mẫu DOCX/PDF của viên chức → auto-map field bằng LLM, lưu template để dùng lại.
-6. Cloud sync (tuỳ chọn) qua Supabase.
+5. ✅ Upload mẫu DOCX → auto-map field bằng Claude, lưu template để dùng lại.
+6. Render DOCX gốc (giữ nguyên format Word) thay vì HTML print, cloud sync (tuỳ chọn) qua Supabase.
 
 ## Cấu trúc
 
@@ -48,6 +52,9 @@ Mở http://localhost:3000.
 - `lib/import-bibtex.ts` — parser BibTeX không phụ thuộc thư viện ngoài.
 - `lib/import-linkedin-pdf.ts` — đọc text từ PDF qua `pdfjs-dist` rồi tách section heuristic.
 - `components/ImportPanel.tsx` — modal 4 tab (GitHub / ORCID / BibTeX / LinkedIn), preview, gộp dữ liệu.
+- `lib/profile-paths.ts`, `lib/template-engine.ts`, `lib/custom-templates-storage.ts` — định nghĩa profile paths cho LLM, thay token, lưu template tự học.
+- `app/api/analyze-template/route.ts` — server route gọi Claude Opus 4.7 (`messages.parse` + JSON schema output) để chèn token vào HTML từ DOCX.
+- `components/CustomTemplateUploader.tsx`, `components/CustomTemplatePrint.tsx` — UI upload + duyệt mapping + mở print preview.
 - `components/ProfileForm.tsx` — form chính (react-hook-form + field arrays).
 - `components/CivilServantSection.tsx` — section thu gọn cho dữ liệu viên chức.
 - `components/templates/shared.ts` — đăng ký font + style chung.
