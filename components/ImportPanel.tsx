@@ -6,15 +6,22 @@ import { fetchGitHubProfile, GitHubImport } from "@/lib/import-github";
 import { fetchOrcidProfile, OrcidImport } from "@/lib/import-orcid";
 import { parseBibtex, BibtexImport } from "@/lib/import-bibtex";
 import { parseLinkedInPdf, LinkedInImport } from "@/lib/import-linkedin-pdf";
+import { importDocument, DocumentImport } from "@/lib/import-document-client";
 
-type Source = "github" | "orcid" | "bibtex" | "linkedin";
+type Source = "ai-document" | "github" | "orcid" | "bibtex" | "linkedin";
 type Fetched =
+  | { source: "ai-document"; data: DocumentImport }
   | { source: "github"; data: GitHubImport }
   | { source: "orcid"; data: OrcidImport }
   | { source: "bibtex"; data: BibtexImport }
   | { source: "linkedin"; data: LinkedInImport };
 
 const SOURCE_META: Record<Source, { label: string; hint: string }> = {
+  "ai-document": {
+    label: "File CV (AI) ⭐",
+    hint:
+      "Upload DOCX / PDF / TXT của CV / lý lịch sẵn có → Claude trích xuất toàn bộ và điền vào form. Cần ANTHROPIC_API_KEY ở server.",
+  },
   github: {
     label: "GitHub",
     hint: "Hồ sơ public, top 8 repo (loại fork & archived), 8 ngôn ngữ phổ biến nhất.",
@@ -30,7 +37,7 @@ const SOURCE_META: Record<Source, { label: string; hint: string }> = {
   linkedin: {
     label: "LinkedIn PDF",
     hint:
-      "Trên LinkedIn: More → Save to PDF, sau đó upload tại đây. Trích xuất tốt nhất cho CV tiếng Anh; tiếng Việt cần xác minh.",
+      "LinkedIn: More → Save to PDF, sau đó upload. Heuristic, không cần API key. Tốt nhất cho CV tiếng Anh.",
   },
 };
 
@@ -43,7 +50,7 @@ export function ImportPanel({
   onApply: (next: Profile) => void;
   onClose: () => void;
 }) {
-  const [source, setSource] = useState<Source>("github");
+  const [source, setSource] = useState<Source>("ai-document");
   const [identifier, setIdentifier] = useState("");
   const [bibtexText, setBibtexText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -88,6 +95,19 @@ export function ImportPanel({
     try {
       const data = await parseLinkedInPdf(file);
       setFetched({ source: "linkedin", data });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onDocumentFile = async (file: File) => {
+    reset();
+    setLoading(true);
+    try {
+      const data = await importDocument(file);
+      setFetched({ source: "ai-document", data });
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -218,6 +238,34 @@ export function ImportPanel({
           </div>
         )}
 
+        {source === "ai-document" && (
+          <div className="mb-3 space-y-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".docx,.pdf,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+              className="hidden"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) onDocumentFile(f);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              className="btn-primary w-full"
+              disabled={loading}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {loading ? "Claude đang đọc file (30–90s)…" : "Chọn DOCX / PDF / TXT"}
+            </button>
+            <p className="text-xs text-slate-500">
+              Toàn bộ Profile (basic, học vấn, kinh nghiệm, công bố, viên chức,
+              link MXH…) sẽ được trích xuất một lượt.
+            </p>
+          </div>
+        )}
+
         {error && (
           <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-2 text-sm text-red-700">
             {error}
@@ -261,13 +309,39 @@ export function ImportPanel({
 }
 
 function hasBasicTargets(f: Fetched) {
-  return f.source === "github" || f.source === "orcid" || f.source === "linkedin";
+  return (
+    f.source === "github" ||
+    f.source === "orcid" ||
+    f.source === "linkedin" ||
+    f.source === "ai-document"
+  );
 }
 
 function Preview({ fetched }: { fetched: Fetched }) {
   let counts: Record<string, number | string | undefined>;
   let warnings: string[] = [];
   switch (fetched.source) {
+    case "ai-document": {
+      const d = fetched.data;
+      counts = {
+        File: d.sourceName,
+        Tên: d.basic?.fullName,
+        Email: d.basic?.email,
+        "Học vấn": d.education?.length ?? 0,
+        "Kinh nghiệm": d.experience?.length ?? 0,
+        "Dự án": d.projects?.length ?? 0,
+        "Công bố": d.publications?.length ?? 0,
+        "Giải thưởng": d.awards?.length ?? 0,
+        "Kỹ năng": d.skills?.length ?? 0,
+        "Ngôn ngữ": d.languages?.length ?? 0,
+        "Liên kết": d.links?.length ?? 0,
+        "Trường viên chức":
+          civilServantFilledCount(d.civilServant) > 0
+            ? civilServantFilledCount(d.civilServant)
+            : undefined,
+      };
+      break;
+    }
     case "github":
       counts = {
         Tên: fetched.data.fullName,
@@ -391,8 +465,84 @@ function mergeProfile(
     next.education = [...next.education, ...d.education];
     next.skills = dedupeStrings([...next.skills, ...d.skills]);
     next.languages = dedupeStrings([...next.languages, ...d.languages]);
+  } else if (fetched.source === "ai-document") {
+    const d = fetched.data;
+    if (d.basic) {
+      fillBasic("fullName", d.basic.fullName);
+      fillBasic("summary", d.basic.summary);
+      fillBasic("email", d.basic.email);
+      fillBasic("phone", d.basic.phone);
+      fillBasic("address", d.basic.address);
+      fillBasic("website", d.basic.website);
+      const otherBasic: (keyof Profile["basic"])[] = [
+        "dateOfBirth",
+        "nationality",
+        "ethnicity",
+        "hometown",
+      ];
+      for (const k of otherBasic) {
+        const v = d.basic[k];
+        if (typeof v === "string" && v && (opts.overwriteBasic || !next.basic[k])) {
+          (next.basic as Record<string, string>)[k] = v;
+        }
+      }
+      if (d.basic.gender && (opts.overwriteBasic || !next.basic.gender)) {
+        const g = d.basic.gender;
+        if (g === "male" || g === "female" || g === "other" || g === "") {
+          next.basic.gender = g;
+        }
+      }
+    }
+    next.education = [...next.education, ...(d.education ?? [])];
+    next.experience = [...next.experience, ...(d.experience ?? [])];
+    next.projects = dedupeBy(
+      [...next.projects, ...(d.projects ?? [])],
+      (p) => p.url || p.name,
+    );
+    next.publications = dedupeBy(
+      [...next.publications, ...(d.publications ?? [])],
+      (p) => (p.doi ? `doi:${p.doi}` : `t:${p.title.toLowerCase()}`),
+    );
+    next.awards = [...next.awards, ...(d.awards ?? [])];
+    next.skills = dedupeStrings([...next.skills, ...(d.skills ?? [])]);
+    next.languages = dedupeStrings([...next.languages, ...(d.languages ?? [])]);
+    next.links = dedupeBy([...next.links, ...(d.links ?? [])], (l) => l.url);
+    if (d.civilServant) {
+      const incoming = d.civilServant;
+      for (const [k, v] of Object.entries(incoming)) {
+        if (k === "family" || k === "disciplines") continue;
+        if (typeof v === "string" && v) {
+          const cur = (next.civilServant as Record<string, unknown>)[k];
+          if (opts.overwriteBasic || !cur) {
+            (next.civilServant as Record<string, unknown>)[k] = v;
+          }
+        }
+      }
+      if (incoming.family) {
+        next.civilServant.family = [...next.civilServant.family, ...incoming.family];
+      }
+      if (incoming.disciplines) {
+        next.civilServant.disciplines = [
+          ...next.civilServant.disciplines,
+          ...incoming.disciplines,
+        ];
+      }
+    }
   }
   return next;
+}
+
+function civilServantFilledCount(cs: Profile["civilServant"] | undefined): number {
+  if (!cs) return 0;
+  let n = 0;
+  for (const [k, v] of Object.entries(cs)) {
+    if (k === "family" || k === "disciplines") {
+      if (Array.isArray(v) && v.length > 0) n += v.length;
+    } else if (typeof v === "string" && v.trim()) {
+      n += 1;
+    }
+  }
+  return n;
 }
 
 function dedupeBy<T>(arr: T[], key: (x: T) => string): T[] {

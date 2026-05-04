@@ -19,12 +19,13 @@ Mở http://localhost:3000.
 - Form chia mục: thông tin cơ bản, học vấn, kinh nghiệm, dự án, công bố, giải thưởng, kỹ năng, ngôn ngữ, liên kết, **viên chức (Đảng/Đoàn, ngạch, gia đình, kỷ luật…)**.
 - Tự lưu localStorage sau mỗi lần chỉnh sửa (debounce 400ms).
 - Import / Export JSON (đồng bộ thủ công, dễ chia sẻ).
-- **Import từ MXH / hồ sơ public**:
+- **Import có sẵn → bỏ qua nhập tay**:
+  - **File CV (AI)** ⭐: upload **DOCX / PDF / TXT** của CV / lý lịch hiện có → Claude Opus 4.7 trích xuất một lượt cả Profile (basic, học vấn, kinh nghiệm, dự án, công bố, giải thưởng, kỹ năng, ngôn ngữ, link MXH, **viên chức**: Đảng/Đoàn, ngạch, gia đình…). PDF được tách text client-side, DOCX/TXT xử lý server-side.
   - **GitHub**: hồ sơ public, top 8 repo (loại fork & archived), 8 ngôn ngữ phổ biến → kỹ năng.
   - **ORCID**: tên, tiểu sử, học vấn, công tác, công bố (kèm DOI), liên kết — chỉ trường public.
   - **BibTeX**: dán export từ Google Scholar / Mendeley / Zotero → công bố (parser tự viết, không deps).
-  - **LinkedIn PDF**: upload file PDF "Save to PDF" → tên, email, tóm tắt, kỹ năng, ngôn ngữ, học vấn, kinh nghiệm (best-effort, hoạt động tốt nhất với CV tiếng Anh).
-  - Khi gộp: tự dedupe links/projects/publications/skills, mặc định không ghi đè trường cơ bản đang có.
+  - **LinkedIn PDF**: upload "Save to PDF" → tên, email, tóm tắt, kỹ năng, ngôn ngữ, học vấn, kinh nghiệm (heuristic, không cần API key, tốt nhất cho CV tiếng Anh).
+  - Khi gộp: tự dedupe links/projects/publications/skills; mặc định không ghi đè trường cơ bản đang có.
 - **4 template PDF có sẵn** chọn từ dropdown:
   - **Modern CV** — bố cục 1 cột gọn.
   - **Sinh viên / Học sinh** — banner màu, hai cột.
