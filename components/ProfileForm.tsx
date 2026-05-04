@@ -8,6 +8,7 @@ import {
 } from "react-hook-form";
 import { Profile } from "@/lib/profile-schema";
 import { FieldArrayCard } from "./FieldArrayCard";
+import { CivilServantSection } from "./CivilServantSection";
 
 type Props = {
   form: UseFormReturn<Profile>;
@@ -367,6 +368,8 @@ export function ProfileForm({ form }: Props) {
           Đang có: {skills.length} kỹ năng, {languages.length} ngôn ngữ.
         </div>
       </section>
+
+      <CivilServantSection form={form} />
 
       <FieldArrayCard
         title="Liên kết mạng xã hội / hồ sơ"

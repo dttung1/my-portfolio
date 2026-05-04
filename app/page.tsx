@@ -17,11 +17,13 @@ import {
   loadProfile,
   saveProfile,
 } from "@/lib/storage";
+import { TemplateId, templates } from "@/lib/templates";
 
 export default function HomePage() {
   const [hydrated, setHydrated] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
+  const [templateId, setTemplateId] = useState<TemplateId>("modern");
   const fileInput = useRef<HTMLInputElement>(null);
 
   const form = useForm<Profile>({
@@ -77,6 +79,18 @@ export default function HomePage() {
                 ? `Đã lưu lúc ${savedAt.toLocaleTimeString()}`
                 : "Chưa lưu"}
             </div>
+            <select
+              className="input w-auto text-sm"
+              value={templateId}
+              onChange={(e) => setTemplateId(e.target.value as TemplateId)}
+              aria-label="Chọn template"
+            >
+              {templates.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
             <button
               type="button"
               className="btn-secondary"
@@ -105,7 +119,9 @@ export default function HomePage() {
             <button type="button" className="btn-danger" onClick={onReset}>
               Xoá hết
             </button>
-            {hydrated && <PdfDownloadButton profile={form.getValues()} />}
+            {hydrated && (
+              <PdfDownloadButton profile={form.getValues()} templateId={templateId} />
+            )}
           </div>
         </div>
 
@@ -143,6 +159,12 @@ export default function HomePage() {
         >
           <div className="sticky top-32 space-y-3">
             <div className="card">
+              <div className="section-title">
+                <span>Template hiện chọn</span>
+              </div>
+              <TemplateInfo templateId={templateId} />
+            </div>
+            <div className="card">
               <div className="section-title">Xem trước</div>
               <PreviewCard profile={watched} />
             </div>
@@ -151,9 +173,26 @@ export default function HomePage() {
       </main>
 
       <footer className="p-4 text-center text-xs text-slate-400">
-        MVP bước 1 — schema + form + lưu cục bộ + xuất PDF · Bước tiếp:
-        nhiều template (HS / SV / NCS / viên chức) & import GitHub/ORCID.
+        MVP bước 2 — 4 template (Modern / SV / Nhà KH / Sơ yếu LL 2C) · Bước
+        tiếp: import GitHub/ORCID & học mẫu DOCX của viên chức bằng LLM.
       </footer>
+    </div>
+  );
+}
+
+function TemplateInfo({ templateId }: { templateId: TemplateId }) {
+  const t = templates.find((x) => x.id === templateId)!;
+  return (
+    <div className="space-y-1 text-sm">
+      <div className="font-semibold text-brand-700">{t.name}</div>
+      <div className="text-xs text-slate-500">Đối tượng: {t.audience}</div>
+      <p className="text-slate-700">{t.description}</p>
+      {templateId === "civil-servant-2c" && (
+        <p className="rounded-md bg-amber-50 p-2 text-xs text-amber-800">
+          Mở mục <strong>Viên chức / Sơ yếu lý lịch</strong> trong form để bổ
+          sung các trường ngạch, Đảng/Đoàn, gia đình, kỷ luật…
+        </p>
+      )}
     </div>
   );
 }

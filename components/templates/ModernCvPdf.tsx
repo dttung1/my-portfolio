@@ -2,7 +2,6 @@
 
 import {
   Document,
-  Font,
   Image,
   Page,
   StyleSheet,
@@ -10,31 +9,12 @@ import {
   View,
 } from "@react-pdf/renderer";
 import { Profile } from "@/lib/profile-schema";
+import { baseStyles, ensureFont, joinDate } from "./shared";
 
-Font.register({
-  family: "Roboto",
-  fonts: [
-    {
-      src: "https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-vietnamese-400-normal.woff",
-      fontWeight: 400,
-    },
-    {
-      src: "https://cdn.jsdelivr.net/npm/@fontsource/roboto@5.0.8/files/roboto-vietnamese-700-normal.woff",
-      fontWeight: 700,
-    },
-  ],
-});
+ensureFont();
 
 const styles = StyleSheet.create({
-  page: {
-    paddingTop: 36,
-    paddingBottom: 36,
-    paddingHorizontal: 40,
-    fontSize: 10.5,
-    fontFamily: "Roboto",
-    color: "#0f172a",
-    lineHeight: 1.45,
-  },
+  ...baseStyles,
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -78,14 +58,7 @@ const styles = StyleSheet.create({
   },
 });
 
-function joinDate(a?: string, b?: string) {
-  const left = a || "";
-  const right = b || "";
-  if (!left && !right) return "";
-  return `${left} – ${right || "Hiện tại"}`;
-}
-
-export function CvPdf({ profile }: { profile: Profile }) {
+export function ModernCvPdf({ profile }: { profile: Profile }) {
   const b = profile.basic;
   const contacts = [b.email, b.phone, b.website, b.address].filter(Boolean) as string[];
 
@@ -115,22 +88,6 @@ export function CvPdf({ profile }: { profile: Profile }) {
             )}
           </View>
         </View>
-
-        {(b.dateOfBirth || b.gender || b.nationality || b.ethnicity || b.hometown) && (
-          <View>
-            <Text style={styles.sectionTitle}>Thông tin cá nhân</Text>
-            {b.dateOfBirth ? <Text>Ngày sinh: {b.dateOfBirth}</Text> : null}
-            {b.gender ? (
-              <Text>
-                Giới tính:{" "}
-                {b.gender === "male" ? "Nam" : b.gender === "female" ? "Nữ" : "Khác"}
-              </Text>
-            ) : null}
-            {b.nationality ? <Text>Quốc tịch: {b.nationality}</Text> : null}
-            {b.ethnicity ? <Text>Dân tộc: {b.ethnicity}</Text> : null}
-            {b.hometown ? <Text>Quê quán: {b.hometown}</Text> : null}
-          </View>
-        )}
 
         {profile.education.length > 0 && (
           <View>
