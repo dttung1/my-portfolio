@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ProfileForm } from "@/components/ProfileForm";
 import { PdfDownloadButton } from "@/components/PdfDownloadButton";
+import { ImportPanel } from "@/components/ImportPanel";
 import {
   Profile,
   emptyProfile,
@@ -24,6 +25,7 @@ export default function HomePage() {
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [tab, setTab] = useState<"edit" | "preview">("edit");
   const [templateId, setTemplateId] = useState<TemplateId>("modern");
+  const [showImport, setShowImport] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const form = useForm<Profile>({
@@ -91,6 +93,13 @@ export default function HomePage() {
                 </option>
               ))}
             </select>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowImport(true)}
+            >
+              Import từ MXH
+            </button>
             <button
               type="button"
               className="btn-secondary"
@@ -173,9 +182,17 @@ export default function HomePage() {
       </main>
 
       <footer className="p-4 text-center text-xs text-slate-400">
-        MVP bước 2 — 4 template (Modern / SV / Nhà KH / Sơ yếu LL 2C) · Bước
-        tiếp: import GitHub/ORCID & học mẫu DOCX của viên chức bằng LLM.
+        MVP bước 3 — Import từ GitHub & ORCID · Bước tiếp: học mẫu DOCX của
+        viên chức bằng LLM, cloud sync tuỳ chọn.
       </footer>
+
+      {showImport && (
+        <ImportPanel
+          current={form.getValues()}
+          onApply={(next) => form.reset(next)}
+          onClose={() => setShowImport(false)}
+        />
+      )}
     </div>
   );
 }
