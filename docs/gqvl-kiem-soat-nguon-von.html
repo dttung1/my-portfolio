@@ -1,0 +1,957 @@
+<title>Kiểm soát nguồn vốn GQVL</title>
+
+<style>
+:root{
+  --paper:#F2F4F2;
+  --surface:#FFFFFF;
+  --surface-2:#E7EDEA;
+  --ink:#14201E;
+  --ink-2:#4B5A54;
+  --ink-3:#6E7D77;
+  --rule:#D2DBD6;
+  --rule-strong:#B6C3BD;
+  --accent:#0E5A50;
+  --accent-ink:#0B463E;
+  --accent-soft:#DCEAE5;
+  --warn:#8E5D0E;
+  --warn-soft:#F4E8D2;
+  --crit:#9C3025;
+  --crit-soft:#F5DFDB;
+  --ok:#2C6B4C;
+  --ok-soft:#DDEBE2;
+
+  --serif: ui-serif, "Iowan Old Style", "Source Serif 4", "Charter", Georgia, "Times New Roman", serif;
+  --sans: ui-sans-serif, system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  --measure: 74ch;
+  --step--1:0.815rem;
+  --step-0:1.02rem;
+  --step-1:1.22rem;
+  --step-2:1.5rem;
+  --step-3:1.95rem;
+  --step-4:2.7rem;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1413;
+    --surface:#151E1B;
+    --surface-2:#1D2926;
+    --ink:#E5EDE9;
+    --ink-2:#A2B2AB;
+    --ink-3:#7E8E88;
+    --rule:#28352F;
+    --rule-strong:#3A4A44;
+    --accent:#5CC1B0;
+    --accent-ink:#8AD8C9;
+    --accent-soft:#16302B;
+    --warn:#D8A44E;
+    --warn-soft:#332711;
+    --crit:#E28275;
+    --crit-soft:#3A1F1B;
+    --ok:#71C295;
+    --ok-soft:#16301F;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1413;
+  --surface:#151E1B;
+  --surface-2:#1D2926;
+  --ink:#E5EDE9;
+  --ink-2:#A2B2AB;
+  --ink-3:#7E8E88;
+  --rule:#28352F;
+  --rule-strong:#3A4A44;
+  --accent:#5CC1B0;
+  --accent-ink:#8AD8C9;
+  --accent-soft:#16302B;
+  --warn:#D8A44E;
+  --warn-soft:#332711;
+  --crit:#E28275;
+  --crit-soft:#3A1F1B;
+  --ok:#71C295;
+  --ok-soft:#16301F;
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:var(--step-0);
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+.wrap{max-width:var(--measure);margin:0 auto;padding:0 1.4rem;}
+.wide{max-width:min(1080px,94vw);margin:0 auto;padding:0 1.4rem;}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:1px solid var(--rule);
+  background:var(--surface);
+  padding:3.4rem 0 2.4rem;
+}
+.masthead .wrap{display:flex;flex-direction:column;gap:1.1rem;}
+.eyebrow{
+  font-family:var(--mono);
+  font-size:var(--step--1);
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin:0;
+}
+h1{
+  font-family:var(--serif);
+  font-size:var(--step-4);
+  line-height:1.08;
+  font-weight:600;
+  letter-spacing:-0.015em;
+  text-wrap:balance;
+  margin:0;
+}
+.deck{
+  font-size:var(--step-1);
+  line-height:1.55;
+  color:var(--ink-2);
+  margin:0;
+  max-width:62ch;
+}
+.chips{display:flex;flex-wrap:wrap;gap:0.5rem;margin-top:0.4rem;}
+.chip{
+  font-family:var(--mono);
+  font-size:var(--step--1);
+  padding:0.22rem 0.6rem;
+  border:1px solid var(--rule-strong);
+  border-radius:2px;
+  color:var(--ink-2);
+  background:var(--paper);
+}
+
+/* ---------- sections ---------- */
+main{padding:2.6rem 0 4rem;display:flex;flex-direction:column;gap:3.2rem;}
+section{display:flex;flex-direction:column;gap:1.1rem;}
+.sec-head{display:flex;flex-direction:column;gap:0.35rem;}
+h2{
+  font-family:var(--serif);
+  font-size:var(--step-3);
+  line-height:1.16;
+  font-weight:600;
+  letter-spacing:-0.01em;
+  text-wrap:balance;
+  margin:0;
+}
+h3{
+  font-family:var(--sans);
+  font-size:var(--step-1);
+  font-weight:650;
+  line-height:1.3;
+  margin:0;
+}
+h4{
+  font-family:var(--mono);
+  font-size:var(--step--1);
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  font-weight:600;
+  color:var(--ink-3);
+  margin:0;
+}
+p{margin:0;}
+.lead{color:var(--ink-2);}
+strong{font-weight:650;color:var(--ink);}
+code{
+  font-family:var(--mono);
+  font-size:0.88em;
+  background:var(--surface-2);
+  padding:0.08em 0.36em;
+  border-radius:2px;
+}
+ul,ol{margin:0;padding-left:1.25rem;display:flex;flex-direction:column;gap:0.45rem;}
+li::marker{color:var(--accent);}
+.hairline{height:1px;background:var(--rule);border:0;margin:0;}
+
+/* ---------- cards ---------- */
+.cards{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));}
+.card{
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:1.1rem 1.15rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.5rem;
+}
+.card p{font-size:0.96rem;color:var(--ink-2);}
+.tag{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--crit);
+  background:var(--crit-soft);
+  align-self:flex-start;
+  padding:0.16rem 0.45rem;
+  border-radius:2px;
+}
+.tag.ok{color:var(--ok);background:var(--ok-soft);}
+.tag.warn{color:var(--warn);background:var(--warn-soft);}
+.tag.neutral{color:var(--accent);background:var(--accent-soft);}
+
+/* ---------- principle callout ---------- */
+.principle{
+  background:var(--accent-soft);
+  border-left:3px solid var(--accent);
+  padding:1.3rem 1.4rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.6rem;
+}
+.principle .quote{
+  font-family:var(--serif);
+  font-size:var(--step-2);
+  line-height:1.32;
+  font-weight:600;
+  color:var(--accent-ink);
+  text-wrap:balance;
+}
+.principle p{color:var(--ink-2);font-size:0.97rem;}
+
+/* ---------- lifecycle rail ---------- */
+.rail{display:flex;flex-direction:column;gap:0;}
+.gate{
+  display:grid;
+  grid-template-columns:3.6rem 1fr;
+  gap:0 1.1rem;
+  padding:1.3rem 0;
+  border-top:1px solid var(--rule);
+}
+.gate:last-child{border-bottom:1px solid var(--rule);}
+.gate-num{
+  font-family:var(--mono);
+  font-size:0.78rem;
+  letter-spacing:0.06em;
+  color:var(--accent);
+  padding-top:0.28rem;
+}
+.gate-num .stage{display:block;color:var(--ink-3);letter-spacing:0.02em;margin-top:0.3rem;font-size:0.7rem;}
+.gate-body{display:flex;flex-direction:column;gap:0.55rem;}
+.gate-body p{color:var(--ink-2);font-size:0.97rem;}
+.gate-body ul{font-size:0.95rem;color:var(--ink-2);}
+
+/* ---------- formula ---------- */
+.formula{
+  font-family:var(--mono);
+  font-size:0.9rem;
+  line-height:1.85;
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:1rem 1.1rem;
+  overflow-x:auto;
+  white-space:pre;
+  color:var(--ink);
+}
+.formula .op{color:var(--accent);}
+
+/* ---------- tables ---------- */
+.tablewrap{
+  overflow-x:auto;
+  border:1px solid var(--rule);
+  border-radius:3px;
+  background:var(--surface);
+}
+table{border-collapse:collapse;width:100%;font-size:0.92rem;}
+caption{
+  caption-side:bottom;
+  text-align:left;
+  font-size:0.82rem;
+  color:var(--ink-3);
+  padding:0.65rem 0.9rem;
+  border-top:1px solid var(--rule);
+}
+th,td{
+  text-align:left;
+  padding:0.6rem 0.9rem;
+  border-bottom:1px solid var(--rule);
+  vertical-align:top;
+}
+thead th{
+  font-family:var(--mono);
+  font-size:0.74rem;
+  letter-spacing:0.07em;
+  text-transform:uppercase;
+  font-weight:600;
+  color:var(--ink-3);
+  background:var(--surface-2);
+  white-space:nowrap;
+}
+tbody tr:last-child td{border-bottom:0;}
+td.num,th.num{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;}
+td.code{font-family:var(--mono);font-size:0.85rem;white-space:nowrap;}
+tr.total td{background:var(--surface-2);font-weight:650;}
+.state{
+  font-family:var(--mono);
+  font-size:0.72rem;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  padding:0.14rem 0.42rem;
+  border-radius:2px;
+  white-space:nowrap;
+}
+.state.s-ok{color:var(--ok);background:var(--ok-soft);}
+.state.s-warn{color:var(--warn);background:var(--warn-soft);}
+.state.s-crit{color:var(--crit);background:var(--crit-soft);}
+
+/* ---------- before / after ---------- */
+.ba{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));}
+.ba-col{
+  border:1px solid var(--rule);
+  border-radius:3px;
+  background:var(--surface);
+  padding:1.1rem 1.15rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.6rem;
+}
+.ba-col.now{border-top:3px solid var(--crit);}
+.ba-col.next{border-top:3px solid var(--ok);}
+.ba-col ol{font-size:0.94rem;color:var(--ink-2);}
+.ba-col .verdict{font-size:0.92rem;font-weight:650;}
+.ba-col.now .verdict{color:var(--crit);}
+.ba-col.next .verdict{color:var(--ok);}
+
+/* ---------- roadmap ---------- */
+.phases{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
+.phase{
+  background:var(--surface);
+  border:1px solid var(--rule);
+  border-radius:3px;
+  padding:1.1rem 1.15rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.6rem;
+}
+.phase .when{
+  font-family:var(--mono);
+  font-size:0.76rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--accent);
+}
+.phase ul{font-size:0.93rem;color:var(--ink-2);gap:0.35rem;}
+
+/* ---------- rules ---------- */
+.rules{display:grid;gap:0.9rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));}
+.rule-card{
+  border:1px solid var(--accent);
+  background:var(--accent-soft);
+  border-radius:3px;
+  padding:1rem 1.1rem;
+  display:flex;
+  flex-direction:column;
+  gap:0.4rem;
+}
+.rule-card .no{
+  font-family:var(--serif);
+  font-size:var(--step-2);
+  font-weight:600;
+  color:var(--accent-ink);
+  line-height:1.2;
+}
+.rule-card p{font-size:0.92rem;color:var(--ink-2);}
+
+/* ---------- footer ---------- */
+footer{
+  border-top:1px solid var(--rule);
+  padding:1.8rem 0 3rem;
+  color:var(--ink-3);
+  font-size:0.86rem;
+}
+footer .wrap{display:flex;flex-direction:column;gap:0.5rem;}
+
+@media (max-width:560px){
+  :root{--step-4:2.05rem;--step-3:1.55rem;--step-2:1.28rem;}
+  .gate{grid-template-columns:1fr;gap:0.6rem;}
+  .gate-num .stage{display:inline;margin-left:0.6rem;}
+}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <p class="eyebrow">Đề án nghiệp vụ · Nguồn vốn cho vay giải quyết việc làm</p>
+    <h1>Kiểm soát nguồn vốn GQVL</h1>
+    <p class="deck">Chuyển việc kiểm soát nguồn vốn từ <strong>hậu kiểm bằng báo cáo KT740</strong> sang <strong>tiền kiểm tại thời điểm quyết định cho vay</strong> — bằng bảng chỉ tiêu khả dụng, cơ chế giữ chỗ và phiếu duyệt in sẵn mã nguồn.</p>
+    <div class="chips">
+      <span class="chip">Phạm vi: KH A (Trung ương) + KH B (địa phương)</span>
+      <span class="chip">Cấp áp dụng: PGD huyện</span>
+      <span class="chip">Khung pháp lý: NĐ 61/2015, NĐ 74/2019</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- 1. CHẨN ĐOÁN -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Chẩn đoán</h4>
+      <h2>Đây là ba lỗi hệ thống, không phải lỗi ý thức của cán bộ</h2>
+      <p class="lead">Việc nhắc nhở “chọn đúng mã nhà đầu tư” đã được làm nhiều lần mà vẫn tái diễn. Lý do là quy trình hiện tại đặt cán bộ tín dụng vào thế phải nhớ đúng một thông tin mà họ không có cách nào tra cứu tại chỗ.</p>
+    </div>
+    <div class="wrap">
+      <div class="cards">
+        <div class="card">
+          <span class="tag">Lỗi 1</span>
+          <h3>Tư duy theo dòng tiền, không theo chỉ tiêu</h3>
+          <p>Cán bộ đang ngầm hiểu “thu được tiền từ nguồn nào thì cho vay lại bằng nguồn đó”. Nhưng nguồn vốn GQVL là <em>chỉ tiêu kế hoạch</em>, không phải là tờ tiền cụ thể trong két. Khi tiền mặt tại phiên giao dịch xã được coi là “nguồn A”, mã nguồn sẽ trôi theo dòng tiền chứ không theo hồ sơ.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Lỗi 2</span>
+          <h3>Không có số khả dụng tại thời điểm quyết định</h3>
+          <p>Tại điểm giao dịch xã, cán bộ không biết nguồn nào còn chỉ tiêu, còn bao nhiêu. Mã nhà đầu tư được chọn theo trí nhớ và theo thói quen của địa bàn quen thuộc — trong khi một cán bộ quản lý nhiều xã với cơ cấu nguồn khác nhau.</p>
+        </div>
+        <div class="card">
+          <span class="tag">Lỗi 3</span>
+          <h3>Vòng phản hồi quá dài</h3>
+          <p>KT740 là báo cáo hậu kiểm. Khi sai lệch lộ ra thì bút toán đã khóa sổ, hồ sơ đã ký, tiền đã ra khỏi quầy. Sửa một mã nguồn ở giai đoạn đó tốn kém gấp nhiều lần so với chặn nó trước khi giải ngân.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. NGUYÊN TẮC -->
+  <section>
+    <div class="wrap">
+      <div class="principle">
+        <p class="quote">Dòng tiền là của đơn vị. Nguồn vốn là của kế hoạch. Hai thứ đó không cần khớp nhau trong cùng một phiên giao dịch.</p>
+        <p>Đây là nguyên tắc phải quán triệt trước khi bàn tới bất kỳ công cụ nào. Tiền thu nợ tại xã nhập vào quỹ chung của đơn vị — nó không mang “màu” của nguồn vốn. Việc thu hồi nợ nguồn A chỉ có một hệ quả duy nhất về mặt nguồn: <strong>giải phóng chỉ tiêu của nguồn A</strong>. Khoản vay mới giải ngân ngay sau đó phải mang mã nguồn đã được duyệt trước trong hồ sơ, bất kể tiền mặt trong két đến từ đâu.</p>
+        <p>Khi cán bộ hiểu điều này, phần lớn động cơ dẫn đến “thu A – gán B” biến mất. Phần còn lại là công cụ và kỷ luật quy trình.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. NĂM CHỐT KIỂM SOÁT -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Giải pháp</h4>
+      <h2>Năm chốt kiểm soát đặt dọc vòng đời khoản vay</h2>
+      <p class="lead">Mỗi chốt chặn một dạng sai lệch khác nhau. Bỏ bất kỳ chốt nào, các chốt còn lại vẫn hoạt động nhưng rủi ro dồn về chốt cuối — tức là quay lại tình trạng hậu kiểm hiện nay.</p>
+    </div>
+    <div class="wrap">
+      <div class="rail">
+
+        <div class="gate">
+          <div class="gate-num">CHỐT 01<span class="stage">Trước phiên</span></div>
+          <div class="gate-body">
+            <h3>Bảng nguồn vốn khả dụng, cập nhật đầu mỗi ngày</h3>
+            <p>Một bảng duy nhất cho toàn đơn vị, mỗi dòng là một mã nguồn, hiển thị số chỉ tiêu còn có thể cho vay. Bảng này là căn cứ duy nhất để cấp mã nguồn — không ai được cấp mã bằng trí nhớ.</p>
+            <ul>
+              <li>Cập nhật đầu giờ sáng từ số liệu hệ thống ngày hôm trước.</li>
+              <li>Cập nhật lại trong ngày mỗi khi có giữ chỗ mới hoặc có xác nhận thu nợ tại xã.</li>
+              <li>Chỉ một người có quyền sửa: cán bộ đầu mối kế hoạch nguồn vốn.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gate">
+          <div class="gate-num">CHỐT 02<span class="stage">Nhận hồ sơ</span></div>
+          <div class="gate-body">
+            <h3>Ma trận gán mã: hồ sơ tự suy ra nguồn, cán bộ không chọn</h3>
+            <p>Mã nguồn không phải là một ô để cán bộ tự điền, mà là kết quả của bốn thuộc tính đã có sẵn trên hồ sơ: đối tượng vay, mục đích sử dụng vốn, tổ chức hội nhận ủy thác và địa bàn xã. Ma trận này thu hẹp lựa chọn hợp lệ từ khoảng mười mã xuống còn một, tối đa là hai.</p>
+            <ul>
+              <li>Các nguồn chuyên đề (hộ có mức sống trung bình, cho vay nông sản) gán cứng theo đối tượng — không bao giờ dùng thay thế cho nguồn khác dù đang thừa chỉ tiêu.</li>
+              <li>Nguồn hội đoàn thể Trung ương chỉ dùng cho hội viên đúng hội đã nhận ủy thác.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gate">
+          <div class="gate-num">CHỐT 03<span class="stage">Phê duyệt</span></div>
+          <div class="gate-body">
+            <h3>Giữ chỗ chỉ tiêu ngay khi duyệt, không đợi đến lúc giải ngân</h3>
+            <p>Đây là chốt quan trọng nhất để chặn vượt chỉ tiêu. Hiện nay chỉ tiêu chỉ bị trừ khi bút toán giải ngân lên hệ thống — nghĩa là trong khoảng thời gian giữa duyệt và giải ngân, nhiều hồ sơ cùng “nhìn thấy” một phần chỉ tiêu đã có chủ.</p>
+            <ul>
+              <li>Hồ sơ được duyệt ⇒ chỉ tiêu bị khóa ngay trên bảng khả dụng, ghi rõ số hồ sơ và ngày dự kiến giải ngân.</li>
+              <li>Giữ chỗ tự hết hiệu lực sau 10 ngày làm việc nếu chưa giải ngân, tránh giữ chỗ ảo làm nghẽn nguồn.</li>
+              <li>Khả dụng chạm 90% chỉ tiêu ⇒ cảnh báo; chạm 100% ⇒ dừng cấp mã, phải xin điều chỉnh chỉ tiêu.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gate">
+          <div class="gate-num">CHỐT 04<span class="stage">Giải ngân tại xã</span></div>
+          <div class="gate-body">
+            <h3>Phiếu duyệt giải ngân in sẵn mã nguồn</h3>
+            <p>Cán bộ mang xuống xã một danh sách đã chốt, mỗi hồ sơ đã có mã nhà đầu tư in trên phiếu. Nhiệm vụ tại xã là nhập theo phiếu, không phải là quyết định nguồn. Đây là điểm cắt trực tiếp nguyên nhân “giao dịch lưu động gây lệch mã”.</p>
+            <ul>
+              <li>Phát sinh ngoài danh sách tại xã: phải gọi về đầu mối nguồn vốn để được cấp mã, ghi nhận vào nhóm trao đổi của đơn vị. Không tự quyết.</li>
+              <li>Thu nợ tại xã: báo về đầu mối ngay trong phiên để chỉ tiêu nguồn tương ứng được giải phóng trong ngày.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="gate">
+          <div class="gate-num">CHỐT 05<span class="stage">Cuối ngày</span></div>
+          <div class="gate-body">
+            <h3>Đối chiếu T+0 và cửa sổ sửa sai trong ngày</h3>
+            <p>Cuối mỗi ngày có phát sinh, chạy sao kê dư nợ theo mã nhà đầu tư (KT740 hoặc tương đương) và đối chiếu ba chiều với bảng chỉ tiêu và với phiếu duyệt đã mang đi. Lệch phát hiện trong ngày được sửa mã trước khi khóa sổ; để sang kỳ sau sẽ phải xử lý bằng thu hồi hoặc chuyển nguồn.</p>
+            <ul>
+              <li>Đối chiếu 3 chiều: chỉ tiêu được giao (văn bản) ↔ dư nợ trên hệ thống ↔ hồ sơ giấy đã ký.</li>
+              <li>Mọi sai lệch ghi vào một sổ theo dõi có thời hạn xử lý, không xử lý miệng.</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. BẢNG KHẢ DỤNG -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Công cụ chốt 01</h4>
+      <h2>Bảng nguồn vốn khả dụng</h2>
+      <p class="lead">Toàn bộ đề án đứng hay đổ ở chỗ có tính đúng được con số “còn cho vay được bao nhiêu” hay không. Công thức phải trừ cả phần đã duyệt nhưng chưa giải ngân, và cộng lại phần đã thu nhưng chưa kịp hạch toán.</p>
+    </div>
+    <div class="wrap">
+      <div class="formula">Khả dụng(nguồn i) = Chỉ tiêu kế hoạch(i)
+              <span class="op">−</span> Dư nợ trên hệ thống(i)
+              <span class="op">−</span> Đã duyệt, đang giữ chỗ(i)
+              <span class="op">+</span> Thu nợ đã xác nhận trong ngày, chưa hạch toán(i)</div>
+    </div>
+    <div class="wrap">
+      <p class="lead">Thành phần cuối cùng chính là lời giải cho tình huống giao dịch lưu động: nó cho phép chỉ tiêu nguồn A được giải phóng và tái sử dụng <em>ngay trong phiên</em> mà không cần chờ bút toán. Điều kiện bắt buộc là khoản thu phải được xác nhận — bằng ảnh chụp phiếu thu hoặc xác nhận của tổ trưởng tổ giao dịch — chứ không phải báo miệng.</p>
+    </div>
+    <div class="wide">
+      <div class="tablewrap">
+        <table>
+          <caption>Số liệu minh họa cho mẫu biểu, đơn vị: triệu đồng. Mã nguồn trong cột đầu là ký hiệu tạm — khi triển khai phải thay bằng đúng mã đợt / mã nhà đầu tư đang dùng trên hệ thống.</caption>
+          <thead>
+            <tr>
+              <th>Mã nguồn</th>
+              <th>Tên nguồn</th>
+              <th class="num">Chỉ tiêu</th>
+              <th class="num">Dư nợ</th>
+              <th class="num">Giữ chỗ</th>
+              <th class="num">Thu chưa HT</th>
+              <th class="num">Khả dụng</th>
+              <th>Trạng thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="code">A-NHCS-01</td>
+              <td>NHCSXH &amp; nguồn huy động (TW)</td>
+              <td class="num">12 400</td>
+              <td class="num">12 210</td>
+              <td class="num">150</td>
+              <td class="num">0</td>
+              <td class="num">40</td>
+              <td><span class="state s-crit">Cạn</span></td>
+            </tr>
+            <tr>
+              <td class="code">A-HĐT-02</td>
+              <td>Hội đoàn thể Trung ương</td>
+              <td class="num">3 000</td>
+              <td class="num">2 640</td>
+              <td class="num">100</td>
+              <td class="num">80</td>
+              <td class="num">340</td>
+              <td><span class="state s-warn">Sát ngưỡng</span></td>
+            </tr>
+            <tr>
+              <td class="code">B-STC-11</td>
+              <td>Sở Tài chính chuyển sang</td>
+              <td class="num">8 000</td>
+              <td class="num">6 150</td>
+              <td class="num">400</td>
+              <td class="num">0</td>
+              <td class="num">1 450</td>
+              <td><span class="state s-ok">Còn nguồn</span></td>
+            </tr>
+            <tr>
+              <td class="code">B-NSH-12</td>
+              <td>Ngân sách huyện (vốn đối ứng)</td>
+              <td class="num">4 500</td>
+              <td class="num">3 020</td>
+              <td class="num">200</td>
+              <td class="num">50</td>
+              <td class="num">1 330</td>
+              <td><span class="state s-ok">Còn nguồn</span></td>
+            </tr>
+            <tr>
+              <td class="code">B-MSTB-13</td>
+              <td>Hộ có mức sống trung bình</td>
+              <td class="num">2 000</td>
+              <td class="num">760</td>
+              <td class="num">0</td>
+              <td class="num">0</td>
+              <td class="num">1 240</td>
+              <td><span class="state s-warn">Giải ngân chậm</span></td>
+            </tr>
+            <tr>
+              <td class="code">B-NS-14</td>
+              <td>Cho vay nông sản</td>
+              <td class="num">1 500</td>
+              <td class="num">430</td>
+              <td class="num">120</td>
+              <td class="num">0</td>
+              <td class="num">950</td>
+              <td><span class="state s-warn">Giải ngân chậm</span></td>
+            </tr>
+            <tr class="total">
+              <td class="code">—</td>
+              <td>Cộng</td>
+              <td class="num">31 400</td>
+              <td class="num">25 210</td>
+              <td class="num">970</td>
+              <td class="num">130</td>
+              <td class="num">5 350</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="wrap">
+      <p class="lead">Bảng mẫu này đã cho thấy đúng bệnh mà đơn vị đang mô tả: nguồn Trung ương đã cạn trong khi hai nguồn chuyên đề mới còn hơn 2,1 tỷ chưa giải ngân được. Nếu không có bảng, cán bộ vẫn tiếp tục đẩy hồ sơ vào <code>A-NHCS-01</code> theo quán tính.</p>
+    </div>
+  </section>
+
+  <!-- 5. MA TRẬN GÁN MÃ -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Công cụ chốt 02</h4>
+      <h2>Ma trận gán mã nguồn</h2>
+      <p class="lead">Mục tiêu là làm cho việc chọn sai trở nên khó, chứ không phải làm cho việc chọn đúng trở nên dễ nhớ. Mỗi hồ sơ chỉ nên còn đúng một ô hợp lệ.</p>
+    </div>
+    <div class="wide">
+      <div class="tablewrap">
+        <table>
+          <caption>Ma trận rút gọn để minh họa nguyên tắc. Đơn vị cần lập bản đầy đủ theo đúng các mã đang mở trên hệ thống và theo văn bản giao chỉ tiêu của chi nhánh tỉnh.</caption>
+          <thead>
+            <tr>
+              <th>Đối tượng vay</th>
+              <th>Mục đích / ngành nghề</th>
+              <th>Hội nhận ủy thác</th>
+              <th>Nguồn được gán</th>
+              <th>Ghi chú ràng buộc</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Hộ có mức sống trung bình</td>
+              <td>Mọi mục đích thuộc GQVL</td>
+              <td>Bất kỳ</td>
+              <td class="code">B-MSTB-13</td>
+              <td>Gán cứng. Không dùng nguồn khác kể cả khi nguồn này đã hết.</td>
+            </tr>
+            <tr>
+              <td>Hộ sản xuất, kinh doanh</td>
+              <td>Trồng trọt, chế biến, tiêu thụ nông sản</td>
+              <td>Bất kỳ</td>
+              <td class="code">B-NS-14</td>
+              <td>Gán cứng theo mục đích. Ưu tiên giải ngân trước để tránh tồn nguồn.</td>
+            </tr>
+            <tr>
+              <td>Hội viên hội đoàn thể</td>
+              <td>Mục đích GQVL thông thường</td>
+              <td>Đúng hội đã nhận ủy thác từ TW</td>
+              <td class="code">A-HĐT-02</td>
+              <td>Chỉ dùng cho hội viên đúng hội. Sai hội là sai nguồn.</td>
+            </tr>
+            <tr>
+              <td>Người lao động, cơ sở SXKD</td>
+              <td>Mục đích GQVL thông thường</td>
+              <td>Bất kỳ / không qua hội</td>
+              <td class="code">A-NHCS-01 → B-STC-11 → B-NSH-12</td>
+              <td>Ba nguồn có thể thay thế nhau. Áp dụng thứ tự ưu tiên ở mục dưới.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. THỨ TỰ ƯU TIÊN -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Nguyên tắc phân bổ</h4>
+      <h2>Thứ tự ưu tiên sử dụng nguồn và điều hòa chỉ tiêu</h2>
+    </div>
+    <div class="wrap">
+      <p class="lead">Thứ tự ưu tiên chỉ áp dụng cho nhóm nguồn có thể thay thế nhau đối với cùng một hồ sơ. Nguyên tắc: <strong>tiêu nguồn bị ràng buộc chặt nhất và có thời hạn giải ngân gấp nhất trước, giữ nguồn linh hoạt nhất làm đệm.</strong></p>
+      <ol>
+        <li><strong>Nguồn có thời hạn giải ngân sắp hết</strong> — bất kể cấp nào, nguồn nào sắp bị thu hồi chỉ tiêu thì ưu tiên tuyệt đối.</li>
+        <li><strong>Nguồn hội đoàn thể Trung ương</strong> — đối tượng hẹp, khó tìm hồ sơ phù hợp, cần dùng sớm.</li>
+        <li><strong>Nguồn Trung ương NHCSXH</strong> — chịu áp lực chỉ tiêu giải ngân của ngành.</li>
+        <li><strong>Nguồn ngân sách tỉnh qua Sở Tài chính</strong> — gắn với cam kết với địa phương cấp tỉnh.</li>
+        <li><strong>Nguồn ngân sách huyện, vốn đối ứng</strong> — dễ điều hòa trong nội bộ huyện nhất, để sau.</li>
+        <li><strong>Nguồn huy động</strong> — đệm cuối cùng, linh hoạt nhất.</li>
+      </ol>
+      <p class="lead">Các nguồn chuyên đề (<code>B-MSTB-13</code>, <code>B-NS-14</code>) không nằm trong thứ tự này vì không thay thế được nguồn nào. Chúng cần một hướng xử lý riêng: nếu tồn đọng, vấn đề nằm ở khâu tạo nguồn hồ sơ đúng đối tượng, phải phối hợp với UBND xã và hội đoàn thể để rà soát danh sách, chứ không phải chuyển chỉ tiêu sang nguồn khác.</p>
+    </div>
+    <div class="wrap">
+      <div class="cards">
+        <div class="card">
+          <span class="tag neutral">Điều hòa nội bộ</span>
+          <h3>Giữa các xã trong huyện</h3>
+          <p>Với cùng một mã nguồn, chỉ tiêu chưa dùng ở xã này được điều sang xã khác trong tháng. Đây là điều chỉnh phân bổ nội bộ, xử lý được nhanh, nên là bước đầu tiên khi phát hiện lệch.</p>
+        </div>
+        <div class="card">
+          <span class="tag neutral">Điều chỉnh chỉ tiêu</span>
+          <h3>Giữa các nguồn</h3>
+          <p>Chuyển chỉ tiêu giữa các mã nguồn khác nhau vượt thẩm quyền của PGD. Khi bảng khả dụng cho thấy lệch mang tính cơ cấu, lập văn bản đề nghị chi nhánh tỉnh điều chỉnh theo quý — kèm số liệu từ chính bảng này làm căn cứ.</p>
+        </div>
+        <div class="card">
+          <span class="tag neutral">Không tự xử lý</span>
+          <h3>Ranh giới phải giữ</h3>
+          <p>Tuyệt đối không “mượn tạm” nguồn khác rồi chuyển lại sau. Đây chính là cơ chế tạo ra tình trạng lệch dư nợ hiện nay và nó luôn để lại dấu vết trên KT740.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7. KỊCH BẢN LƯU ĐỘNG -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Tình huống trọng tâm</h4>
+      <h2>Thu nợ nguồn A tại xã X, giải ngân ngay tại xã Y</h2>
+      <p class="lead">Đây là kịch bản đơn vị mô tả là nguyên nhân chính. So sánh cách xử lý hiện nay và cách xử lý theo đề án.</p>
+    </div>
+    <div class="wide">
+      <div class="ba">
+        <div class="ba-col now">
+          <h4>Hiện nay</h4>
+          <ol>
+            <li>Thu nợ tại xã X, hồ sơ chưa kịp cập nhật lên hệ thống.</li>
+            <li>Tiền mặt được mang sang phiên giao dịch xã Y trong ngày.</li>
+            <li>Cán bộ giải ngân cho khách hàng ở xã Y, tự chọn mã nhà đầu tư tại chỗ.</li>
+            <li>Vì nguồn A trên hệ thống vẫn hiển thị đã dùng hết (dư nợ chưa giảm), cán bộ chọn nguồn B cho “chạy được lệnh”.</li>
+            <li>Cuối kỳ chạy KT740: nguồn B vượt chỉ tiêu, nguồn A thừa chỉ tiêu.</li>
+          </ol>
+          <p class="verdict">Sai lệch được tạo ra bởi chính quy trình, và chỉ lộ ra sau khi đã khóa sổ.</p>
+        </div>
+        <div class="ba-col next">
+          <h4>Theo đề án</h4>
+          <ol>
+            <li>Thu nợ tại xã X. Cán bộ báo ngay về đầu mối nguồn vốn kèm ảnh phiếu thu.</li>
+            <li>Đầu mối ghi vào cột “thu nợ đã xác nhận, chưa hạch toán” ⇒ khả dụng nguồn A tăng lên tức thì.</li>
+            <li>Hồ sơ của khách hàng xã Y đã được duyệt từ trước, đã giữ chỗ, đã in mã nguồn trên phiếu duyệt.</li>
+            <li>Cán bộ giải ngân đúng theo mã in trên phiếu — không phải quyết định gì tại xã.</li>
+            <li>Cuối ngày đối chiếu: dư nợ hệ thống khớp bảng khả dụng, sai lệch bằng không.</li>
+          </ol>
+          <p class="verdict">Dòng tiền vẫn luân chuyển như cũ; chỉ có mã nguồn là được cố định từ trước.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8. PHÂN VAI -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Tổ chức thực hiện</h4>
+      <h2>Phân vai và trách nhiệm</h2>
+      <p class="lead">Điểm mấu chốt: quyền cấp mã nguồn phải được tách khỏi người tạo hồ sơ. Chừng nào cán bộ tín dụng vừa lập hồ sơ vừa tự quyết mã nguồn thì không có chốt kiểm soát nào thực sự tồn tại.</p>
+    </div>
+    <div class="wide">
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Vai trò</th>
+              <th>Trách nhiệm chính</th>
+              <th>Sản phẩm bàn giao</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Cán bộ đầu mối nguồn vốn</strong><br><span style="color:var(--ink-3);font-size:0.88rem;">(tổ kế hoạch nghiệp vụ)</span></td>
+              <td>Là người duy nhất cập nhật bảng khả dụng và cấp mã nguồn. Duyệt giữ chỗ. Chạy đối chiếu cuối ngày.</td>
+              <td>Bảng khả dụng đầu ngày; sổ theo dõi sai lệch.</td>
+            </tr>
+            <tr>
+              <td><strong>Cán bộ tín dụng</strong></td>
+              <td>Lập hồ sơ đầy đủ bốn thuộc tính của ma trận. Nhập đúng mã in trên phiếu duyệt. Báo thu nợ tại xã trong phiên.</td>
+              <td>Hồ sơ đúng thuộc tính; báo cáo thu nợ trong phiên.</td>
+            </tr>
+            <tr>
+              <td><strong>Trưởng phòng / Phó giám đốc</strong></td>
+              <td>Ký duyệt hồ sơ kèm xác nhận nguồn đã được giữ chỗ. Xử lý các trường hợp cảnh báo 90% và đề nghị điều chỉnh chỉ tiêu.</td>
+              <td>Phiếu duyệt giải ngân có mã nguồn.</td>
+            </tr>
+            <tr>
+              <td><strong>Giám đốc PGD</strong></td>
+              <td>Ban hành quy định nội bộ về cấp mã nguồn. Đưa chỉ tiêu sai mã vào bình xét thi đua. Đề nghị chi nhánh tỉnh điều chỉnh chỉ tiêu khi lệch mang tính cơ cấu.</td>
+              <td>Văn bản quy định nội bộ; báo cáo điều chỉnh chỉ tiêu.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9. CÔNG CỤ -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Công cụ hỗ trợ</h4>
+      <h2>Ba giai đoạn, làm được ngay từ giai đoạn một</h2>
+      <p class="lead">Đề án không phụ thuộc vào việc có phần mềm hay không. Giai đoạn một chỉ cần một bảng tính dùng chung và một quy định nội bộ.</p>
+    </div>
+    <div class="wrap">
+      <div class="phases">
+        <div class="phase">
+          <span class="when">Giai đoạn 1 · Ngay</span>
+          <h3>Bảng tính dùng chung</h3>
+          <ul>
+            <li>Một file bảng tính trực tuyến, công thức khả dụng tự tính, tô màu theo ngưỡng 90% và 100%.</li>
+            <li>Quyền sửa giới hạn ở đầu mối nguồn vốn; cán bộ tín dụng chỉ xem.</li>
+            <li>Một biểu mẫu điện tử để báo thu nợ tại xã ngay từ điện thoại.</li>
+            <li>Nhóm trao đổi của đơn vị dùng để xin cấp mã cho trường hợp phát sinh.</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="when">Giai đoạn 2 · 2–3 tháng</span>
+          <h3>Ứng dụng nội bộ</h3>
+          <ul>
+            <li>Nhập file KT740 để tự động cập nhật dư nợ theo mã nguồn, bỏ khâu gõ tay.</li>
+            <li>Chức năng giữ chỗ có thời hạn và tự hết hiệu lực.</li>
+            <li>In phiếu duyệt giải ngân có sẵn mã nguồn và mã vạch để đối chiếu.</li>
+            <li>Cảnh báo tự động khi một nguồn chạm ngưỡng.</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="when">Giai đoạn 3 · Dài hạn</span>
+          <h3>Kiến nghị lên hệ thống</h3>
+          <ul>
+            <li>Đề nghị chi nhánh tỉnh và Hội sở bổ sung kiểm tra chặn ngay trên hệ thống: không cho phép tạo khoản vay khi mã nguồn không khớp đối tượng, hoặc khi nguồn đã hết chỉ tiêu.</li>
+            <li>Đây là giải pháp triệt để nhất nhưng nằm ngoài thẩm quyền PGD, nên xếp sau.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10. KPI -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Đo lường</h4>
+      <h2>Chỉ số theo dõi hiệu quả</h2>
+    </div>
+    <div class="wide">
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Chỉ số</th>
+              <th>Cách đo</th>
+              <th>Mục tiêu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Tỷ lệ hồ sơ sai mã nguồn</td>
+              <td>Số hồ sơ phải sửa mã / tổng hồ sơ giải ngân trong tháng</td>
+              <td>Dưới 0,5% sau 3 tháng, tiến tới 0</td>
+            </tr>
+            <tr>
+              <td>Thời gian tồn tại của một sai lệch</td>
+              <td>Số ngày từ khi phát sinh đến khi sửa xong</td>
+              <td>Không quá 1 ngày làm việc</td>
+            </tr>
+            <tr>
+              <td>Số lần vượt chỉ tiêu nguồn</td>
+              <td>Đếm trên KT740 hằng tháng</td>
+              <td>Bằng 0</td>
+            </tr>
+            <tr>
+              <td>Độ lệch tỷ lệ giải ngân giữa các nguồn</td>
+              <td>Chênh lệch giữa nguồn cao nhất và thấp nhất tại 30/6 và 31/12</td>
+              <td>Không quá 2 điểm phần trăm</td>
+            </tr>
+            <tr>
+              <td>Hồ sơ giải ngân ngoài danh sách đã chốt</td>
+              <td>Đếm số trường hợp phải xin cấp mã tại xã</td>
+              <td>Giảm dần theo tháng — đo kỷ luật kế hoạch</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11. LỘ TRÌNH -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Lộ trình</h4>
+      <h2>30 – 60 – 90 ngày</h2>
+    </div>
+    <div class="wrap">
+      <div class="phases">
+        <div class="phase">
+          <span class="when">30 ngày đầu</span>
+          <ul>
+            <li>Chốt danh mục mã nguồn đang mở và đối chiếu với văn bản giao chỉ tiêu.</li>
+            <li>Lập ma trận gán mã đầy đủ, thông qua trong họp giao ban.</li>
+            <li>Dựng bảng khả dụng, nạp số liệu KT740 gần nhất làm số đầu kỳ.</li>
+            <li>Cử cán bộ đầu mối nguồn vốn, ban hành quy định nội bộ về quyền cấp mã.</li>
+            <li>Rà soát và xử lý dứt điểm các khoản đang lệch mã hiện có.</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="when">31 – 60 ngày</span>
+          <ul>
+            <li>Áp dụng phiếu duyệt giải ngân có in mã nguồn cho toàn bộ phiên giao dịch xã.</li>
+            <li>Chạy đối chiếu T+0 mọi ngày có phát sinh.</li>
+            <li>Tập huấn lại cho cán bộ tín dụng, trọng tâm là nguyên tắc tách dòng tiền khỏi nguồn vốn.</li>
+            <li>Bắt đầu ghi nhận các chỉ số đo lường.</li>
+          </ul>
+        </div>
+        <div class="phase">
+          <span class="when">61 – 90 ngày</span>
+          <ul>
+            <li>Đánh giá số liệu 2 tháng, điều chỉnh ngưỡng cảnh báo và ma trận nếu cần.</li>
+            <li>Lập văn bản đề nghị chi nhánh tỉnh điều chỉnh chỉ tiêu cho các nguồn lệch cơ cấu.</li>
+            <li>Quyết định có đầu tư ứng dụng nội bộ ở giai đoạn 2 hay không, dựa trên khối lượng thao tác thủ công thực tế.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 12. BA KHÔNG -->
+  <section>
+    <div class="wrap sec-head">
+      <h4>Quán triệt</h4>
+      <h2>Ba điều không, dán tại nơi làm việc</h2>
+      <p class="lead">Nếu chỉ nhớ được ba câu từ toàn bộ đề án này, thì là ba câu sau.</p>
+    </div>
+    <div class="wrap">
+      <div class="rules">
+        <div class="rule-card">
+          <span class="no">Không</span>
+          <p>giải ngân khi trên phiếu duyệt chưa có mã nguồn.</p>
+        </div>
+        <div class="rule-card">
+          <span class="no">Không</span>
+          <p>tự đổi mã nguồn tại điểm giao dịch xã.</p>
+        </div>
+        <div class="rule-card">
+          <span class="no">Không</span>
+          <p>hết ngày mà chưa đối chiếu dư nợ theo nguồn.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <hr class="hairline">
+    <p>Các mã nguồn, số liệu và ngưỡng trong tài liệu là ví dụ minh họa cho mẫu biểu. Khi triển khai cần thay bằng mã đợt / mã nhà đầu tư thực tế trên hệ thống và số liệu theo văn bản giao chỉ tiêu của chi nhánh tỉnh. Mọi nội dung liên quan đến thẩm quyền điều chỉnh chỉ tiêu phải tuân thủ quy định hiện hành của NHCSXH.</p>
+  </div>
+</footer>
