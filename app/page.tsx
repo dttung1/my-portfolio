@@ -175,6 +175,10 @@ export default function HomePage() {
       <footer className="p-4 text-center text-xs text-slate-400">
         MVP bước 2 — 4 template (Modern / SV / Nhà KH / Sơ yếu LL 2C) · Bước
         tiếp: import GitHub/ORCID & học mẫu DOCX của viên chức bằng LLM.
+        <span className="mx-2">·</span>
+        <a href="/gqvl" className="underline hover:text-slate-600">
+          Công cụ kiểm soát nguồn vốn GQVL
+        </a>
       </footer>
     </div>
   );

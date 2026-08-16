@@ -32,6 +32,28 @@ Mở http://localhost:3000.
 4. Upload mẫu DOCX/PDF của viên chức → auto-map field bằng LLM, lưu template để dùng lại.
 5. Cloud sync (tuỳ chọn) qua Supabase.
 
+## Công cụ kiểm soát nguồn vốn GQVL (`/gqvl`)
+
+Công cụ giai đoạn 2 của đề án tại `docs/gqvl-kiem-soat-nguon-von.html`: chuyển
+việc kiểm soát nguồn vốn cho vay giải quyết việc làm từ hậu kiểm bằng báo cáo
+KT740 sang tiền kiểm ngay tại thời điểm quyết định cho vay.
+
+- **Bảng nguồn vốn khả dụng** — Khả dụng = Chỉ tiêu − Dư nợ hệ thống − Giữ chỗ
+  − Giải ngân chưa hạch toán + Thu nợ đã xác nhận chưa hạch toán.
+- **Giữ chỗ chỉ tiêu ngay khi duyệt**, tự hết hiệu lực sau N ngày làm việc.
+- **Ma trận gán mã** — mã nguồn suy ra từ đối tượng vay, mục đích, hội nhận ủy
+  thác và địa bàn; cán bộ tín dụng không tự chọn. Nguồn chuyên đề gán cứng,
+  hết chỉ tiêu thì chặn thay vì rơi sang nguồn khác.
+- **Thu nợ tại xã** — ghi nhận kèm căn cứ để giải phóng chỉ tiêu ngay trong
+  phiên, không chờ bút toán.
+- **Nhập KT740** (CSV/TSV hoặc dán từ Excel, đọc được số kiểu Việt Nam) và đối
+  chiếu biến động: chênh dương báo hiệu có khoản vay gán sai mã nguồn.
+- **Phiếu duyệt giải ngân** in sẵn mã nguồn, gom theo từng điểm giao dịch xã.
+
+Dữ liệu lưu localStorage của máy đang dùng; xuất/nhập JSON để sao lưu và bàn
+giao. Cần nhiều người cùng xem một bảng theo thời gian thực thì phải triển khai
+bản có máy chủ và cơ sở dữ liệu.
+
 ## Cấu trúc
 
 - `lib/profile-schema.ts` — Zod schema, kiểu `Profile` dùng chung (gồm block `civilServant`).
@@ -43,3 +65,6 @@ Mở http://localhost:3000.
 - `components/templates/{Modern,Student,Scientist,CivilServant2C}CvPdf.tsx` — 4 template PDF.
 - `components/PdfDownloadButton.tsx` — nút tải PDF, nhận `templateId`.
 - `app/page.tsx` — layout chính + template picker + xem trước + import/export.
+- `lib/gqvl/{types,compute,kt740,format,storage,demo}.ts` — mô hình dữ liệu, công thức khả dụng, ma trận gán mã, đối chiếu, đọc KT740.
+- `components/gqvl/*.tsx` — các tab của công cụ nguồn vốn.
+- `app/gqvl/page.tsx` — vỏ trang và điều hướng tab.

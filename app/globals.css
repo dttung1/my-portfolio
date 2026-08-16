@@ -17,6 +17,18 @@ body {
     "Helvetica Neue", Arial, "Noto Sans", sans-serif;
 }
 
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+  html,
+  body {
+    height: auto;
+    background: #fff;
+  }
+}
+
 @layer components {
   .input {
     @apply w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500;
